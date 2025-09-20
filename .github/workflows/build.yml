@@ -12,6 +12,10 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v5
 
+      # Nuevo paso: Hacer gradlew ejecutable
+      - name: Hacer el archivo gradlew ejecutable
+        run: chmod +x ./gradlew
+
       - name: Configurar Docker Buildx
         uses: docker/setup-buildx-action@v2
 
@@ -24,7 +28,7 @@ jobs:
           file: ./Dockerfile
           push: false
           load: true
-          tags: my-java-app:latest # Le damos un nombre a la imagen
+          tags: my-java-app:latest
 
       # Paso 2: Ejecuta el contenedor y los tests
       - name: Ejecutar los tests unitarios
