@@ -27,7 +27,7 @@ jobs:
           tags: my-java-app:latest
 
       - name: Ejecutar tests dentro del contenedor
-        run:   |
+        run:  |
           mkdir -p app/build/reports
           mkdir -p app/build/test-results
           docker run --rm \
@@ -40,8 +40,16 @@ jobs:
           ls -R app/build/test-results
 
       # Subir reportes como artefacto descargable
-      - name: Subir reportes como artefacto
+      - name: Subir reporte HTML de tests
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports
+          name: html-test-report
+          path: app/build/reports/tests/test/
+
+      - name: Subir resultados XML de tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: xml-test-results
           path: app/build/test-results/test/
+
+
