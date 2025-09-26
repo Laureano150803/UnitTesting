@@ -27,11 +27,11 @@ jobs:
           tags: my-java-app:latest
 
       - name: Ejecutar tests dentro del contenedor
-        run:  |
+        run:   |
           mkdir -p app/build/reports
           docker run --rm \
             -v ${{ github.workspace }}/app/build/reports:/app/app/build/reports \
-            my-java-app:latest
+            my-java-app:latest ./gradlew :app:test --no-daemon
           echo "Listando contenido de los reportes para verificación:"
           ls -R app/build/reports
 
