@@ -9,4 +9,4 @@ COPY . .
 RUN chmod +x gradlew
 
 # Ejecutar tests por defecto con logs detallados
-CMD ["./gradlew", "test", "--info", "--stacktrace", "--no-daemon"]
+CMD ["./gradlew", "clean", "test", "--info", "--no-build-cache"]
