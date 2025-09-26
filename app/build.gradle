@@ -9,6 +9,7 @@
 plugins {
     // Apply the application plugin to add support for building a CLI application in Java.
     id 'application'
+    id 'jacoco'
 }
 
 repositories {
@@ -41,4 +42,17 @@ java {
 application {
     // Define the main class for the application.
     mainClass = 'org.example.App'
+}
+
+jacoco {
+    toolVersion = "0.8.10" // puedes usar la última estable
+}
+
+jacocoTestReport {
+    dependsOn test // asegura que primero se corran los tests
+    reports {
+        xml.required = true
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir("reports/jacoco/test/html")
+    }
 }
