@@ -7,6 +7,26 @@ on:
   pull_request:
 
 jobs:
+  linting:
+    name: Code Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Dar permisos de ejecución a Gradlew
+        run: chmod +x ./gradlew
+
+      - name: Ejecutar Checkstyle
+        run: ./gradlew :app:check
+
+
   build-and-test:
     runs-on: ubuntu-latest
 
@@ -34,19 +54,20 @@ jobs:
             -v ${{ github.workspace }}/app/build/reports:/app/app/build/reports \
             -v ${{ github.workspace }}/app/build/test-results:/app/app/build/test-results \
             my-java-app:latest ./gradlew :app:test --no-daemon
-          echo "--- Contenido del Reporte HTML ---"
           ls -R app/build/reports
           echo "--- Contenido de los Resultados XML ---"
           ls -R app/build/test-results
 
       # Subir reportes como artefacto descargable
       - name: Subir reporte HTML de tests
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: html-test-report
           path: app/build/reports/tests/test/
 
       - name: Subir resultados XML de tests
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: xml-test-results
