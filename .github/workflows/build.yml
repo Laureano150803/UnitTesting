@@ -1,4 +1,4 @@
-name: Test con Docker
+name: Lint, Build, Test and Coverage Check
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
   pull_request:
 
 jobs:
+  # 🔹 JOB 1: LINT
   lint:
     name: Code Linting
     runs-on: ubuntu-latest
@@ -23,39 +24,24 @@ jobs:
       - name: Dar permisos de ejecución a Gradlew
         run: chmod +x ./gradlew
 
+      # Este paso ya ejecuta la verificación de Checkstyle
       - name: Ejecutar Checkstyle
         run: ./gradlew :app:check
 
-  test:
-    runs-on: ubuntu-latest
-    needs: lint
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Hacer gradlew ejecutable
-        run: chmod +x ./gradlew
-
-      - name: Ejecutar tests con cobertura
-        run: ./gradlew test jacocoTestReport
-
-      - name: Verificar cobertura mínima (90%)
-        run: |
-          COVERAGE=$(grep -Po 'TOTAL.*?\K\d+(?=%)' app/build/reports/jacoco/test/html/index.html | head -1)
-          echo "Cobertura actual: $COVERAGE%"
-          if [ "$COVERAGE" -lt 90 ]; then
-            echo "❌ Cobertura insuficiente: $COVERAGE%"
-            exit 1
-          fi
-
-      - name: Subir reporte de coverage
+      # Opcional pero recomendado: Subir el reporte de linting
+      - name: Subir reporte de Checkstyle
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
-          path: app/build/reports/jacoco/test/html/
+          name: checkstyle-report
+          path: app/build/reports/checkstyle/
 
+  # 🔹 JOB 2: BUILD, TEST Y VERIFICACIÓN DE COBERTURA
   build-and-test:
+    name: Build, Test & Coverage Check
+    # Esta línea es clave: asegura que el linting pase primero
+    needs: lint
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
@@ -72,20 +58,19 @@ jobs:
           load: true
           tags: my-java-app:latest
 
-      - name: Ejecutar tests dentro del contenedor
+      # Este paso ahora ejecuta la tarea 'check', que incluye tests Y la verificación de cobertura
+      - name: Ejecutar Tests y Verificación de Cobertura
         run:  |
+          # Creamos los directorios para TODOS los reportes
           mkdir -p app/build/reports
           mkdir -p app/build/test-results
+          # Añadimos un volumen para el reporte de Jacoco
           docker run --rm \
             -v ${{ github.workspace }}/app/build/reports:/app/app/build/reports \
             -v ${{ github.workspace }}/app/build/test-results:/app/app/build/test-results \
-            my-java-app:latest ./gradlew :app:test --no-daemon
-          echo "--- Contenido del Reporte HTML ---"
-          ls -R app/build/reports
-          echo "--- Contenido de los Resultados XML ---"
-          ls -R app/build/test-results
+            my-java-app:latest ./gradlew :app:check --no-daemon
 
-      # Subir reportes como artefacto descargable
+      # Subir reporte de tests (HTML)
       - name: Subir reporte HTML de tests
         if: always()
         uses: actions/upload-artifact@v4
@@ -93,10 +78,18 @@ jobs:
           name: html-test-report
           path: app/build/reports/tests/test/
 
+      # Subir resultados de tests (XML)
       - name: Subir resultados XML de tests
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: xml-test-results
           path: app/build/test-results/test/
 
-
+      # NUEVO: Subir el reporte de cobertura
+      - name: Subir Reporte de Cobertura (Coverage)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: app/build/reports/jacoco/test/html/
