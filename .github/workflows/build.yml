@@ -27,7 +27,11 @@ jobs:
           tags: my-java-app:latest
 
       - name: Ejecutar tests dentro del contenedor
-        run: docker run --rm my-java-app:latest || true
+        run:  |
+          mkdir -p build/reports
+          docker run --rm \
+          -v ${{ github.workspace }}/build/reports:/app/build/reports \
+          my-java-app:latest || true
 
       # Subir reportes como artefacto descargable
       - name: Subir reportes como artefacto
