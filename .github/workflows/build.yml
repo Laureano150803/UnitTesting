@@ -79,7 +79,7 @@ jobs:
   coverage-check:
     name: Test Coverage Check
     runs-on: ubuntu-latest
-    needs: [ lint ] # Se ejecuta después del linting
+    needs: [ build-and-test ]
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
@@ -94,26 +94,27 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Generar reporte de cobertura con JaCoCo
-        # Este comando ejecuta los tests y luego genera el reporte de JaCoCo
         run: ./gradlew :app:test :app:jacocoTestReport
 
-      - name: Extraer el porcentaje de cobertura
+      - name: Extraer el porcentaje de cobertura total (versión precisa)
         id: jacoco
         run: |
-          # Extraemos el porcentaje de instrucciones cubiertas del reporte XML
-          coverage_percentage=$(cat app/build/reports/jacoco/test/jacocoTestReport.xml | awk -F'"' '/<counter type="INSTRUCTION"/{print int($14/($12+$14)*100)}')
-          echo "Coverage Percentage: $coverage_percentage%"
-          # Guardamos el valor como un "output" del paso
-          echo "coverage_percentage=$coverage_percentage" >> $GITHUB_OUTPUT
+          # Este comando awk lee todo el archivo y se queda con los valores de la ÚLTIMA LÍNEA
+          # que coincide con el contador de INSTRUCCIONES, que es el resumen total.
+          # También maneja internamente el caso de división por cero.
+          percentage=$(awk -F'"' '/<counter type="INSTRUCTION"/{ missed=$4; covered=$6 } END { total=missed+covered; if(total>0){pct=covered*100/total} else {pct=0}; print int(pct) }' app/build/reports/jacoco/test/jacocoTestReport.xml)
+          
+          echo "Total Coverage Percentage: $percentage%"
+          echo "coverage_percentage=$percentage" >> $GITHUB_OUTPUT
 
       - name: Validar umbral de cobertura (mínimo 80%)
         run: |
           threshold=80
           coverage=${{ steps.jacoco.outputs.coverage_percentage }}
-
+          
           echo "El umbral requerido es ${threshold}%."
           echo "La cobertura actual es ${coverage}%."
-
+          
           if (( coverage < threshold )); then
             echo "Error: La cobertura de código de ${coverage}% está por debajo del umbral requerido de ${threshold}%."
             exit 1
@@ -122,7 +123,7 @@ jobs:
           fi
 
       - name: Subir reporte de cobertura de JaCoCo
-        if: always() # Se ejecuta siempre, incluso si el paso anterior falla
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-coverage-report
