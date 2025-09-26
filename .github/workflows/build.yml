@@ -27,18 +27,11 @@ jobs:
           tags: my-java-app:latest
 
       - name: Ejecutar tests dentro del contenedor
-        run: docker run --rm my-java-app:latest
-
-      # Copiar reportes HTML fuera del contenedor
-      - name: Copiar reportes de tests
-        run: |
-          id=$(docker create my-java-app:latest)
-          docker cp $id:/app/build/reports ./reports
-          docker rm -v $id
+        run: docker run --rm my-java-app:latest || true
 
       # Subir reportes como artefacto descargable
       - name: Subir reportes como artefacto
         uses: actions/upload-artifact@v4
         with:
           name: test-reports
-          path: ./reports
+          path: build/reports/tests/test
