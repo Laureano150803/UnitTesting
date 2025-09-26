@@ -28,14 +28,14 @@ jobs:
 
       - name: Ejecutar tests dentro del contenedor
         run:  |
-          mkdir -p build/reports
           docker run --rm \
-          -v ${{ github.workspace }}/build/reports:/app/build/reports \
-          my-java-app:latest || true
+            -v ${{ github.workspace }}/build/reports:/app/build/reports \
+            my-java-app:latest
+          
 
       # Subir reportes como artefacto descargable
       - name: Subir reportes como artefacto
         uses: actions/upload-artifact@v4
         with:
           name: test-reports
-          path: /app/app/build/reports/tests/test
+          path: build/reports/tests/test/
