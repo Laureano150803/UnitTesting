@@ -3,9 +3,7 @@ FROM openjdk:17-jdk-slim
 WORKDIR /app
 
 # Copiar gradlew y config primero (para aprovechar caché)
-COPY gradlew .
-COPY gradle gradle
-COPY build.gradle settings.gradle ./
+COPY . .
 
 # Dar permisos de ejecución al wrapper
 RUN chmod +x gradlew
