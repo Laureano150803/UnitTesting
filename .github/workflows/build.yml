@@ -52,11 +52,9 @@ jobs:
           mkdir -p app/build/test-results
           docker run --rm \
             -v ${{ github.workspace }}/app/build/reports:/app/app/build/reports \
-            -v ${{ github.workspace }}/app/build/test-results:/app/app/build/test-results \
-            my-java-app:latest ./gradlew :app:test --no-daemon
-          ls -R app/build/reports
-          echo "--- Contenido de los Resultados XML ---"
-          ls -R app/build/test-results
+            -v ${{ github.workspace }}/app/build/reports/jacoco:/app/app/build/reports/jacoco \
+            my-java-app:latest ./gradlew :app:test :app:jacocoTestReport --no-daemon
+         
 
       # Subir reportes como artefacto descargable
       - name: Subir reporte HTML de tests
@@ -72,5 +70,12 @@ jobs:
         with:
           name: xml-test-results
           path: app/build/test-results/test/
+
+      - name: Subir Reporte de Cobertura (Coverage)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: app/build/reports/jacoco/test/html/
 
 
