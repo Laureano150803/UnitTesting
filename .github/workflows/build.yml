@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  pull_request:
 
 jobs:
   build-and-test:
@@ -28,7 +29,7 @@ jobs:
 
       # Ejecutar tests dentro del contenedor
       - name: Ejecutar los tests unitarios
-        run: docker run --rm my-java-app:latest
+        run: chmod +x ./gradlew
 
       # Guardar reportes de tests como artefacto
       - name: Copiar reportes fuera del contenedor

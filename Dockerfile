@@ -9,7 +9,7 @@ COPY . .
 RUN chmod +x gradlew
 
 # Descargar dependencias para aprovechar cache en builds posteriores
-RUN chmod +x gradlew
+RUN ./gradlew dependencies --no-daemon || return 0
 
 # Copiar el resto del código
 COPY . .
