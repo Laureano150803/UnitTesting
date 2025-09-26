@@ -22,6 +22,14 @@ dependencies {
     implementation libs.guava
 }
 
+// =================================================================
+// >> AÑADIR ESTE BLOQUE PARA CONECTAR TEST CON JACOCO <<
+// =================================================================
+tasks.named('test') {
+    finalizedBy jacocoTestReport // Esta es la línea clave
+}
+// =================================================================
+
 testing {
     suites {
         // Configure the built-in test suite
@@ -53,6 +61,7 @@ jacocoTestReport {
     reports {
         xml.required = true
         csv.required = false
-        html.outputLocation = layout.buildDirectory.dir("reports/jacoco/test/html")
+        // La siguiente línea es opcional, Gradle ya lo hace por defecto.
+        // html.outputLocation = layout.buildDirectory.dir("reports/jacoco/test/html")
     }
 }
