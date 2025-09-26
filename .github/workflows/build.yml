@@ -29,15 +29,19 @@ jobs:
       - name: Ejecutar tests dentro del contenedor
         run:   |
           mkdir -p app/build/reports
+          mkdir -p app/build/test-results
           docker run --rm \
             -v ${{ github.workspace }}/app/build/reports:/app/app/build/reports \
+            -v ${{ github.workspace }}/app/build/test-results:/app/app/build/test-results \
             my-java-app:latest ./gradlew :app:test --no-daemon
-          echo "Listando contenido de los reportes para verificación:"
+          echo "--- Contenido del Reporte HTML ---"
           ls -R app/build/reports
+          echo "--- Contenido de los Resultados XML ---"
+          ls -R app/build/test-results
 
       # Subir reportes como artefacto descargable
       - name: Subir reportes como artefacto
         uses: actions/upload-artifact@v4
         with:
           name: test-reports
-          path: app/build/reports/
+          path: app/build/test-results/test/
