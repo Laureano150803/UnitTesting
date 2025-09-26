@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  linting:
+  inting:
     name: Code Linting
     runs-on: ubuntu-latest
     steps:
@@ -25,7 +25,6 @@ jobs:
 
       - name: Ejecutar Checkstyle
         run: ./gradlew :app:check
-
 
   build-and-test:
     runs-on: ubuntu-latest
@@ -52,9 +51,12 @@ jobs:
           mkdir -p app/build/test-results
           docker run --rm \
             -v ${{ github.workspace }}/app/build/reports:/app/app/build/reports \
-            -v ${{ github.workspace }}/app/build/reports/jacoco:/app/app/build/reports/jacoco \
-            my-java-app:latest ./gradlew :app:test :app:jacocoTestReport --no-daemon
-         
+            -v ${{ github.workspace }}/app/build/test-results:/app/app/build/test-results \
+            my-java-app:latest ./gradlew :app:test --no-daemon
+          echo "--- Contenido del Reporte HTML ---"
+          ls -R app/build/reports
+          echo "--- Contenido de los Resultados XML ---"
+          ls -R app/build/test-results
 
       # Subir reportes como artefacto descargable
       - name: Subir reporte HTML de tests
@@ -65,17 +67,9 @@ jobs:
           path: app/build/reports/tests/test/
 
       - name: Subir resultados XML de tests
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: xml-test-results
           path: app/build/test-results/test/
-
-      - name: Subir Reporte de Cobertura (Coverage)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: app/build/reports/jacoco/test/html/
 
 
