@@ -17,7 +17,6 @@ jobs:
       - name: Configurar Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      # Construir imagen sin publicar (solo local en el runner)
       - name: Construir la imagen de Docker
         uses: docker/build-push-action@v4
         with:
@@ -27,19 +26,19 @@ jobs:
           load: true
           tags: my-java-app:latest
 
-      # Ejecutar tests dentro del contenedor
-      - name: Ejecutar los tests unitarios
-        run: chmod +x ./gradlew
+      - name: Ejecutar tests dentro del contenedor
+        run: docker run --rm my-java-app:latest
 
-      # Guardar reportes de tests como artefacto
-      - name: Copiar reportes fuera del contenedor
+      # Copiar reportes HTML fuera del contenedor
+      - name: Copiar reportes de tests
         run: |
           id=$(docker create my-java-app:latest)
           docker cp $id:/app/build/reports ./reports
           docker rm -v $id
 
+      # Subir reportes como artefacto descargable
       - name: Subir reportes como artefacto
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: test-reports
           path: ./reports
