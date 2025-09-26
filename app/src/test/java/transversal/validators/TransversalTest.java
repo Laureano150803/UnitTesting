@@ -11,7 +11,7 @@ public class TransversalTest {
     }
     @Test void trueEmailValidation(){
         EmailValidator validator = new EmailValidator(){};
-        String email = "holamundo@yopmailcom";
+        String email = "holamundo@yopmail.com";
         boolean correctEmail = validator.esEmailValido(email);
         Assertions.assertTrue(correctEmail);
     }
