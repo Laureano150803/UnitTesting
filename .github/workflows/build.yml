@@ -1,4 +1,4 @@
-name: Lint, Build, Test and Coverage Check
+name: Test con Docker
 
 on:
   push:
@@ -7,7 +7,6 @@ on:
   pull_request:
 
 jobs:
-  # 🔹 JOB 1: LINT
   lint:
     name: Code Linting
     runs-on: ubuntu-latest
@@ -24,24 +23,64 @@ jobs:
       - name: Dar permisos de ejecución a Gradlew
         run: chmod +x ./gradlew
 
-      # Este paso ya ejecuta la verificación de Checkstyle
       - name: Ejecutar Checkstyle
         run: ./gradlew :app:check
 
-      # Opcional pero recomendado: Subir el reporte de linting
-      - name: Subir reporte de Checkstyle
-        if: always()
+  coverage-check:
+    name: Test Coverage Check
+    runs-on: ubuntu-latest
+    needs: [ lint ] # Se ejecuta después del linting
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Dar permisos de ejecución a Gradlew
+        run: chmod +x ./gradlew
+
+      - name: Generar reporte de cobertura con JaCoCo
+        # Este comando ejecuta los tests y luego genera el reporte de JaCoCo
+        run: ./gradlew :app:test :app:jacocoTestReport
+
+      - name: Extraer el porcentaje de cobertura
+        id: jacoco
+        run: |
+          # Extraemos el porcentaje de instrucciones cubiertas del reporte XML
+          coverage_percentage=$(cat app/build/reports/jacoco/test/jacocoTestReport.xml | awk -F'"' '/<counter type="INSTRUCTION"/{print int($14/($12+$14)*100)}')
+          echo "Coverage Percentage: $coverage_percentage%"
+          # Guardamos el valor como un "output" del paso
+          echo "coverage_percentage=$coverage_percentage" >> $GITHUB_OUTPUT
+
+      - name: Validar umbral de cobertura (mínimo 80%)
+        run: |
+          threshold=80
+          coverage=${{ steps.jacoco.outputs.coverage_percentage }}
+          
+          echo "El umbral requerido es ${threshold}%."
+          echo "La cobertura actual es ${coverage}%."
+          
+          if (( 70 < threshold )); then
+            echo "Error: La cobertura de código de ${coverage}% está por debajo del umbral requerido de ${threshold}%."
+            exit 1
+          else
+            echo "Éxito: La cobertura de código cumple con el umbral."
+          fi
+
+      - name: Subir reporte de cobertura de JaCoCo
+        if: always() # Se ejecuta siempre, incluso si el paso anterior falla
         uses: actions/upload-artifact@v4
         with:
-          name: checkstyle-report
-          path: app/build/reports/checkstyle/
+          name: jacoco-coverage-report
+          path: app/build/reports/jacoco/
 
-  # 🔹 JOB 2: BUILD, TEST Y VERIFICACIÓN DE COBERTURA
   build-and-test:
-    name: Build, Test & Coverage Check
-    # Esta línea es clave: asegura que el linting pase primero
-    needs: lint
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
@@ -58,19 +97,20 @@ jobs:
           load: true
           tags: my-java-app:latest
 
-      # Este paso ahora ejecuta la tarea 'check', que incluye tests Y la verificación de cobertura
-      - name: Ejecutar Tests y Verificación de Cobertura
+      - name: Ejecutar tests dentro del contenedor
         run:  |
-          # Creamos los directorios para TODOS los reportes
           mkdir -p app/build/reports
           mkdir -p app/build/test-results
-          # Añadimos un volumen para el reporte de Jacoco
           docker run --rm \
             -v ${{ github.workspace }}/app/build/reports:/app/app/build/reports \
             -v ${{ github.workspace }}/app/build/test-results:/app/app/build/test-results \
-            my-java-app:latest ./gradlew :app:check --no-daemon
+            my-java-app:latest ./gradlew :app:test --no-daemon
+          echo "--- Contenido del Reporte HTML ---"
+          ls -R app/build/reports
+          echo "--- Contenido de los Resultados XML ---"
+          ls -R app/build/test-results
 
-      # Subir reporte de tests (HTML)
+      # Subir reportes como artefacto descargable
       - name: Subir reporte HTML de tests
         if: always()
         uses: actions/upload-artifact@v4
@@ -78,18 +118,10 @@ jobs:
           name: html-test-report
           path: app/build/reports/tests/test/
 
-      # Subir resultados de tests (XML)
       - name: Subir resultados XML de tests
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: xml-test-results
           path: app/build/test-results/test/
 
-      # NUEVO: Subir el reporte de cobertura
-      - name: Subir Reporte de Cobertura (Coverage)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: app/build/reports/jacoco/test/html/
+
